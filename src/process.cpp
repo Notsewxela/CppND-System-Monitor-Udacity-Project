@@ -5,19 +5,28 @@
 #include <vector>
 
 #include "process.h"
+#include "linux_parser.h"
 
 using std::string;
 using std::to_string;
 using std::vector;
 
+// TODO: Work out how to have PID called once instead of by all of these functions
+
+
 // TODO: Return this process's ID
 int Process::Pid() { return 0; }
 
 // TODO: Return this process's CPU utilization
-float Process::CpuUtilization() { return 0; }
+float Process::CpuUtilization() { 
+    int pid = Pid();
+    //return LinuxParser::ActiveJiffies(pid) / LinuxParser::UpTime(pid);
+    return 0;
+}
 
 // TODO: Return the command that generated this process
-string Process::Command() { return string(); }
+// 78 is a placeholder value for now
+string Process::Command() { return LinuxParser::Command(78); }
 
 // TODO: Return this process's memory utilization
 string Process::Ram() { return string(); }

@@ -4,7 +4,8 @@
 #include <string>
 
 namespace Format {
-std::string ElapsedTime(long times);  // TODO: See src/format.cpp
+std::string ElapsedTime(long times);  // DONE: See src/format.cpp
+std::string LeadingZeros(const int value, const unsigned int n_zero);
 };                                    // namespace Format
 
 #endif

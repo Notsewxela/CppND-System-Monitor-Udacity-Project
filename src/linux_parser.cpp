@@ -3,19 +3,19 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <stdexcept>
+#include <iostream>
 
 #include "linux_parser.h"
+#include <iomanip>
 
-using std::stof;
 using std::string;
 using std::to_string;
 using std::vector;
 
 // DONE: An example of how to read data from the filesystem
 string LinuxParser::OperatingSystem() {
-  string line;
-  string key;
-  string value;
+  string line, key, value;
   std::ifstream filestream(kOSPath);
   if (filestream.is_open()) {
     while (std::getline(filestream, line)) {
@@ -67,37 +67,186 @@ vector<int> LinuxParser::Pids() {
   return pids;
 }
 
-// TODO: Read and return the system memory utilization
-float LinuxParser::MemoryUtilization() { return 0.0; }
+// DONE: Read and return the system memory utilization
+float LinuxParser::MemoryUtilization() { 
+  
+  // These are our string stream extraction variables
+  string key, units;
+  long value;
 
-// TODO: Read and return the system uptime
-long LinuxParser::UpTime() { return 0; }
+  long mem_total, mem_free;
 
-// TODO: Read and return the number of jiffies for the system
-long LinuxParser::Jiffies() { return 0; }
+  // Allows breaking out of the loop early
+  bool mem_total_found{false}, mem_free_found{false};
+  
+  std::ifstream filestream(kProcDirectory + kMeminfoFilename);
 
-// TODO: Read and return the number of active jiffies for a PID
-// REMOVE: [[maybe_unused]] once you define the function
-long LinuxParser::ActiveJiffies(int pid[[maybe_unused]]) { return 0; }
+  if (filestream.is_open()) {
+    string line;
+    while (std::getline(filestream, line) and !(mem_free_found and mem_total_found)) {
+      std::istringstream linestream{line};
+      linestream >> key >> value >> units;
+      if (key == "MemTotal:") {
+        mem_total = value;
+        mem_total_found = true;
+      } else if (key == "MemFree:") {
+        mem_free = value;
+        mem_free_found = true;
+      }
+    }
+  }
 
-// TODO: Read and return the number of active jiffies for the system
-long LinuxParser::ActiveJiffies() { return 0; }
+  if (mem_total_found and mem_free_found) {
+    // Cast to a float as late as possible to ensure accuracy is not lost as much as possible.
+    return (float) (mem_total - mem_free) / (mem_total*1.0);
+  /* Called in case it didn't find any info, either because the file does not exist or something missing in file
+     Alternative here is just to throw an error, but that has benefits and drawbacks compared with what I have done.
+     What I have here is a program that won't crash but will produce erroneous results instead
+     If it was st to crash, it fails whole program gets stuck and crashes, but easier to identify erroneous results
+     Unsure which is better in this context.... */
+  } else {
+    return 0;
+  }
+}
 
-// TODO: Read and return the number of idle jiffies for the system
-long LinuxParser::IdleJiffies() { return 0; }
+// DONE: Read and return the system uptime
+long LinuxParser::UpTime() { 
+  long uptime;
+  std::ifstream filestream(kProcDirectory + kUptimeFilename);
+  if (filestream.is_open()) {
+    string line;
+    while (std::getline(filestream, line)) {
+      std::istringstream linestream{line};
+      linestream >> uptime;
+    }
+  }
+  return uptime;
+}
 
-// TODO: Read and return CPU utilization
-vector<string> LinuxParser::CpuUtilization() { return {}; }
+// DONE: Read and return the number of jiffies for the system since the last boot
+long LinuxParser::Jiffies() {
+  // Wonder if there is easy way around two calls to the CpuUtilization function?
+  return ActiveJiffies() + IdleJiffies();
+}
 
-// TODO: Read and return the total number of processes
-int LinuxParser::TotalProcesses() { return 0; }
+// DONE: Read and return the number of active jiffies for a PID
+long LinuxParser::ActiveJiffies(int pid) {
+  long utime, stime, cutime, cstime;
+  std::ifstream filestream(kProcDirectory + std::to_string(pid) + kStatFilename);
+  if (filestream.is_open()) {
+    string line;
+    // Set the delimeter to a space
+    // Need to use the '' characters so that C++ interprets this as a character and not a string with the extra character on the end
+    // https://stackoverflow.com/questions/39066998/what-are-the-meaning-of-values-at-proc-pid-stat
+    // https://knowledge.udacity.com/questions/129844
+    int i{0};
+    std::stringstream linestream{line};
+    long useless_token;
+    while (i++ < 13) {
+      linestream >> useless_token;
+    }
+    linestream >> utime >> stime >> cutime >> cstime >> useless_token;
+    return (utime + stime + cutime + cstime) / sysconf(_SC_CLK_TCK);
+  }
+  // Return 0 if it all goes wrong :(
+  return 0;
+}
 
-// TODO: Read and return the number of running processes
-int LinuxParser::RunningProcesses() { return 0; }
+// DONE: Read and return the number of active jiffies for the system
+long LinuxParser::ActiveJiffies() { 
+  vector<string> jiffies = CpuUtilization();
+  using std::stol;
+  return stol(jiffies[CPUStates::kUser_]) + stol(jiffies[CPUStates::kGuest_]) +
+  stol(jiffies[CPUStates::kGuestNice_]) + stol(jiffies[CPUStates::kIRQ_]) + 
+  stol(jiffies[CPUStates::kNice_]) + stol(jiffies[CPUStates::kSoftIRQ_]) +
+  stol(jiffies[CPUStates::kSteal_]) + stol(jiffies[CPUStates::kSystem_]);
+}
+
+// DONE: Read and return the number of idle jiffies for the system
+long LinuxParser::IdleJiffies() { 
+  vector<string> jiffies = CpuUtilization();
+  using std::stol;
+  return stol(jiffies[CPUStates::kIdle_]) + stol(jiffies[CPUStates::kIOwait_]);
+
+}
+
+// DONE: Read and return CPU utilization
+vector<string> LinuxParser::CpuUtilization() {
+  vector<string> jiffies;
+  bool found{false};
+  std::ifstream filestream(kProcDirectory + kStatFilename);
+
+  if (filestream.is_open()) {
+    string line, cpu, jiffy;
+    // Doing the loop allows for accomodation to changes of the structure of /proc/stat
+    
+    while (std::getline(filestream, line) and !found) {
+      std::istringstream linestream{line};
+      linestream >> cpu;
+      if (cpu == "cpu") {
+        while (linestream >> jiffy) {
+          jiffies.emplace_back(jiffy);
+        }
+        found = true;
+      }
+    }
+  }
+  if (found) {
+    return jiffies;
+  } else { // Something went wrong :(
+    return std::vector<string> {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  }
+}
+
+// DONE: Read and return the total number of processes
+int LinuxParser::TotalProcesses() {
+  return Processes("processes");
+}
+
+// DONE: Read and return the number of running processes
+int LinuxParser::RunningProcesses() {
+  return Processes("procs_running");
+}
+
+// A function I added to deal with repeated code in the two above process functions
+int LinuxParser::Processes(string key) {
+  int processes;
+  bool found{false};
+  std::ifstream filestream(kProcDirectory + kStatFilename);
+
+  if (filestream.is_open()) {
+    string line, label;
+    while (std::getline(filestream, line) and !found) {
+      std::istringstream linestream{line};
+      linestream >> label;
+      if (label == key) {
+        linestream >> processes;
+        found = true;
+      }
+    }
+  }
+  if (found) {
+    return processes;
+  } else {
+    return 0;
+  }
+}
 
 // TODO: Read and return the command associated with a process
-// REMOVE: [[maybe_unused]] once you define the function
-string LinuxParser::Command(int pid[[maybe_unused]]) { return string(); }
+string LinuxParser::Command(int pid) { 
+  std::ifstream filestream(kProcDirectory + std::to_string(pid) + kCmdlineFilename);
+  
+  // Don't need to istring stream here as we want the entire line's contents
+  if (filestream.is_open()) {
+    string line;
+    std::getline(filestream, line);
+    // Testing line
+    std::cout << line << std::endl;
+    return line;
+  }
+  // Something went wrong :(
+  return "Problem accessing " + kProcDirectory + std::to_string(pid) + kCmdlineFilename;
+}
 
 // TODO: Read and return the memory used by a process
 // REMOVE: [[maybe_unused]] once you define the function
