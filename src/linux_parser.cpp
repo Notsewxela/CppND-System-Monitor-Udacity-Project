@@ -111,14 +111,13 @@ float LinuxParser::MemoryUtilization() {
 
 // DONE: Read and return the system uptime
 long LinuxParser::UpTime() { 
-  long uptime;
+  long uptime{0};
   std::ifstream filestream(kProcDirectory + kUptimeFilename);
   if (filestream.is_open()) {
     string line;
-    while (std::getline(filestream, line)) {
-      std::istringstream linestream{line};
-      linestream >> uptime;
-    }
+    std::getline(filestream, line);
+    std::istringstream linestream{line};
+    linestream >> uptime;
   }
   return uptime;
 }
@@ -232,7 +231,7 @@ int LinuxParser::Processes(string key) {
   }
 }
 
-// TODO: Read and return the command associated with a process
+// Done: Read and return the command associated with a process
 string LinuxParser::Command(int pid) { 
   std::ifstream filestream(kProcDirectory + std::to_string(pid) + kCmdlineFilename);
   
@@ -240,8 +239,6 @@ string LinuxParser::Command(int pid) {
   if (filestream.is_open()) {
     string line;
     std::getline(filestream, line);
-    // Testing line
-    std::cout << line << std::endl;
     return line;
   }
   // Something went wrong :(
