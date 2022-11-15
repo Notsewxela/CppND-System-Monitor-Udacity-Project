@@ -138,13 +138,14 @@ long LinuxParser::ActiveJiffies(int pid) {
     // Need to use the '' characters so that C++ interprets this as a character and not a string with the extra character on the end
     // https://stackoverflow.com/questions/39066998/what-are-the-meaning-of-values-at-proc-pid-stat
     // https://knowledge.udacity.com/questions/129844
-    int i{0};
+
     std::stringstream linestream{line};
     long useless_token;
-    while (i++ < 13) {
+    for (int i = 0; i < 13; i++) {
       linestream >> useless_token;
+
     }
-    linestream >> utime >> stime >> cutime >> cstime >> useless_token;
+    linestream >> utime >> stime >> cutime >> cstime;
     return (utime + stime + cutime + cstime) / sysconf(_SC_CLK_TCK);
   }
   // Return 0 if it all goes wrong :(
@@ -245,9 +246,25 @@ string LinuxParser::Command(int pid) {
   return "Problem accessing " + kProcDirectory + std::to_string(pid) + kCmdlineFilename;
 }
 
-// TODO: Read and return the memory used by a process
-// REMOVE: [[maybe_unused]] once you define the function
-string LinuxParser::Ram(int pid[[maybe_unused]]) { return string(); }
+// Done: Read and return the memory used by a process
+string LinuxParser::Ram(int pid) { 
+  std::ifstream filestream(kProcDirectory + std::to_string(pid) + kStatusFilename);
+  if (filestream.is_open()) {
+    long ram;
+    string line, label;
+    while (std::getline(filestream, line)) {
+      std::istringstream linestream{line};
+      linestream >> label;
+      if (label == "VmSize:") {
+        linestream >> ram;
+        // Convert from kB to MB
+        return std::to_string(ram / 1000);
+
+      }
+    }
+  }
+  return "Problem accessing " + kProcDirectory + std::to_string(pid) + kStatusFilename;
+}
 
 // TODO: Read and return the user ID associated with a process
 // REMOVE: [[maybe_unused]] once you define the function
@@ -257,6 +274,19 @@ string LinuxParser::Uid(int pid[[maybe_unused]]) { return string(); }
 // REMOVE: [[maybe_unused]] once you define the function
 string LinuxParser::User(int pid[[maybe_unused]]) { return string(); }
 
-// TODO: Read and return the uptime of a process
-// REMOVE: [[maybe_unused]] once you define the function
-long LinuxParser::UpTime(int pid[[maybe_unused]]) { return 0; }
+// DONE: Read and return the uptime of a process
+long LinuxParser::UpTime(int pid) { 
+  std::ifstream filestream(kProcDirectory + std::to_string(pid) + kStatFilename);
+  if (filestream.is_open()) {
+    long uptime;
+    string line, useless_token;
+    std::istringstream linestream{line};
+    // Get the token in position 21 (starttime)
+    for (int i = 0; i < 21; i++) {
+      linestream >> useless_token;
+    }
+    linestream >> uptime;
+    return uptime / sysconf(_SC_CLK_TCK);
+  }
+  return 0;
+}

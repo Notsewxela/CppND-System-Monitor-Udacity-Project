@@ -21,6 +21,8 @@ class Process {
  private:
    int pid_;
    std::string command_;
+   std::string user_;
+
 };
 
 #endif
