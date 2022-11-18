@@ -134,17 +134,13 @@ long LinuxParser::ActiveJiffies(int pid) {
   std::ifstream filestream(kProcDirectory + std::to_string(pid) + kStatFilename);
   if (filestream.is_open()) {
     string line;
-    // Set the delimeter to a space
-    // Need to use the '' characters so that C++ interprets this as a character and not a string with the extra character on the end
-    // https://stackoverflow.com/questions/39066998/what-are-the-meaning-of-values-at-proc-pid-stat
-    // https://knowledge.udacity.com/questions/129844
-
+    std::getline(filestream, line);
     std::stringstream linestream{line};
-    long useless_token;
-    for (int i = 0; i < 13; i++) {
+    string useless_token;
+    for (int i = 1; i <= 13; i++) {
       linestream >> useless_token;
-
     }
+    //            14 15 16 17
     linestream >> utime >> stime >> cutime >> cstime;
     return (utime + stime + cutime + cstime) / sysconf(_SC_CLK_TCK);
   }
@@ -240,6 +236,8 @@ string LinuxParser::Command(int pid) {
   if (filestream.is_open()) {
     string line;
     std::getline(filestream, line);
+    // Get rid of the hidden null characters present in the strings loaded from the file that seem to represent spaces!
+    std::replace(line.begin(), line.end(), '\000', ' ');
     return line;
   }
   // Something went wrong :(
@@ -280,6 +278,7 @@ long LinuxParser::UpTime(int pid) {
   if (filestream.is_open()) {
     long uptime;
     string line, useless_token;
+    std::getline(filestream, line);
     std::istringstream linestream{line};
     // Get the token in position 21 (starttime)
     for (int i = 0; i < 21; i++) {
