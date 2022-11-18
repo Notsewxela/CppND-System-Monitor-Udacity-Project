@@ -14,10 +14,15 @@ using std::vector;
 
 Process::Process(const int pid) {
     pid_ = pid;
-    uptime_ = LinuxParser::UpTime(pid);
+    uptime_ = LinuxParser::UpTime(pid); //starttime / hz
+    active_jiffies_ = LinuxParser::ActiveJiffies(pid_); //total_time / hz
+    system_uptime_ = LinuxParser::ActiveJiffies(); //uptime
+
+    /*seconds = uptime - starttime / hz
+
+    cpu = (total_time / hz) / seconds
+*/
     try {
-        active_jiffies_ = LinuxParser::ActiveJiffies(pid_);
-        system_uptime_ = LinuxParser::ActiveJiffies();
         cpu_ = float(active_jiffies_) / float(system_uptime_ - uptime_);
     } catch (...) { // Divide by 0 or something
         cpu_ = 0.0;;
@@ -37,7 +42,7 @@ float Process::CpuUtilization() const { return cpu_; }
 // DONE: Return the command that generated this process
 string Process::Command() const { return command_; }
 
-// TODO: Return this process's memory utilization
+// DONE: Return this process's memory utilization
 string Process::Ram() const { return ram_; }
 
 // DONE: Return the user (name) that generated this process

@@ -236,7 +236,7 @@ string LinuxParser::Command(int pid) {
   if (filestream.is_open()) {
     string line;
     std::getline(filestream, line);
-    // Get rid of the hidden null characters present in the strings loaded from the file that seem to represent spaces!
+    // Get rid of the hidden null characters present in the strings loaded from the file that seem to meant to represent spaces!
     std::replace(line.begin(), line.end(), '\000', ' ');
     return line;
   }
@@ -280,8 +280,8 @@ long LinuxParser::UpTime(int pid) {
     string line, useless_token;
     std::getline(filestream, line);
     std::istringstream linestream{line};
-    // Get the token in position 21 (starttime)
-    for (int i = 0; i < 21; i++) {
+    // Get the token in position 22 (starttime)
+    for (int i = 1; i <= 21; i++) {
       linestream >> useless_token;
     }
     linestream >> uptime;

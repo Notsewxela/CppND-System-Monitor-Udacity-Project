@@ -23,7 +23,7 @@ class Process {
    long uptime_;
    long active_jiffies_;
    long system_uptime_;
-   long cpu_;
+   float cpu_;
    std::string command_;
    std::string ram_;
    std::string user_;
