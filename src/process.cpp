@@ -16,12 +16,12 @@ Process::Process(const int pid) {
     pid_ = pid;
     uptime_ = LinuxParser::UpTime(pid); //starttime / hz
     active_jiffies_ = LinuxParser::ActiveJiffies(pid_); //total_time / hz
-    system_uptime_ = LinuxParser::ActiveJiffies(); //uptime
+    system_uptime_ = LinuxParser::UpTime(); //uptime
 
     /*seconds = uptime - starttime / hz
 
     cpu = (total_time / hz) / seconds
-*/
+*/ 
     try {
         cpu_ = float(active_jiffies_) / float(system_uptime_ - uptime_);
     } catch (...) { // Divide by 0 or something
