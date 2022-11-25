@@ -49,7 +49,7 @@ string Process::Ram() const { return ram_; }
 string Process::User() const { return user_; }
 
 // DONE: Return the age of this process (in seconds)
-long int Process::UpTime() const { return LinuxParser::UpTime(pid_); }
+long int Process::UpTime() const { return LinuxParser::UpTime() - LinuxParser::UpTime(pid_); }
 
 // DONE: Overload the "less than" comparison operator for Process objects
 bool Process::operator<(Process const& a) const { 
