@@ -264,13 +264,46 @@ string LinuxParser::Ram(int pid) {
   return "Problem accessing " + kProcDirectory + std::to_string(pid) + kStatusFilename;
 }
 
-// TODO: Read and return the user ID associated with a process
-// REMOVE: [[maybe_unused]] once you define the function
-string LinuxParser::Uid(int pid[[maybe_unused]]) { return string(); }
+// DONE: Read and return the user ID associated with a process
+string LinuxParser::Uid(int pid) { 
+  std::ifstream filestream(kProcDirectory + std::to_string(pid) + kStatusFilename);
+  if (filestream.is_open()) {
+    string line, label, uid;
+    while (std::getline(filestream, line)) {
+      std::istringstream linestream{line};
+      linestream >> label;
+      if (label == "Uid:") {
+        linestream >> uid;
+        return uid;
+      }
+    }
 
-// TODO: Read and return the user associated with a process
-// REMOVE: [[maybe_unused]] once you define the function
-string LinuxParser::User(int pid[[maybe_unused]]) { return string(); }
+  }
+  // Couldn't find for whatever reason
+  return string();
+}
+
+// DONE: Read and return the user associated with a process
+string LinuxParser::User(int pid) { 
+  string uid = LinuxParser::Uid(pid);
+  std::ifstream filestream(kPasswordPath);
+  if (filestream.is_open()) {
+    string line, label, user, segment;
+    std::vector<string> segments;
+    while (std::getline(filestream, line)) {
+      std::istringstream linestream{line};
+      while (std::getline(linestream, segment, ':')) {
+        segments.emplace_back(segment);
+      }
+      // Info from man page for /etc/passwd
+      if (segments[2] == uid) {
+        return segments[0];
+      }
+      segments.clear();
+    }
+  }
+  return "Problem parsing user";
+}
 
 // DONE: Read and return the uptime of a process
 long LinuxParser::UpTime(int pid) { 
