@@ -5,9 +5,9 @@
 
 class Processor {
  public:
-  float Utilization();  // DONE: See src/processor.cpp
+  float Utilization();  // See src/processor.cpp
 
-  // DONE: Declare any necessary private members
+  // Declare any necessary private members
  private:
     long active_jiffies_;
     long idle_jiffies_;

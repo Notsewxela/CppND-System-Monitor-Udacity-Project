@@ -11,10 +11,15 @@
 using std::string;
 using std::to_string;
 
-// 50 bars uniformly displayed from 0 - 100 %
-// 2% is one bar(|)
 std::string NCursesDisplay::ProgressBar(float percent) {
-  std::string result{"0%"};
+  // Very strange issue where If I remove the 0% character pair and leave it as blank or spaces, the % on the end of the progress bar does not print...
+  // Tried debugging to no avail. Very confused
+  // string result{"  "};
+  // string result{""};
+  string result{"0%"};
+
+  // 50 bars uniformly displayed from 0 - 100 %
+  // i.e. 2% is one bar(|)
   int size{50};
   float bars{percent * size};
 
@@ -23,9 +28,11 @@ std::string NCursesDisplay::ProgressBar(float percent) {
   }
 
   string display{to_string(percent * 100).substr(0, 4)};
-  if (percent < 0.1 || percent == 1.0)
+  if (percent < 0.1 || percent == 1.0) {
     display = " " + to_string(percent * 100).substr(0, 3);
-  return result + " " + display + "/100%";
+  }
+  result += " " + display + "/100%";
+  return result;
 }
 
 void NCursesDisplay::DisplaySystem(System& system, WINDOW* window) {

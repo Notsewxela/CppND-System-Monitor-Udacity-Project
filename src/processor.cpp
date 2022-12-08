@@ -1,6 +1,6 @@
 #include "processor.h"
 
-// DONE: Return the aggregate CPU utilization
+// Return the aggregate CPU utilization
 // https://stackoverflow.com/questions/23367857/accurate-calculation-of-cpu-usage-given-in-percentage-in-linux
 float Processor::Utilization() { 
     prev_idle_ = idle_jiffies_;

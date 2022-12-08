@@ -1,10 +1,16 @@
 # CppND-System-Monitor
 
-Starter code for System Monitor Project in the Object Oriented Programming Course of the [Udacity C++ Nanodegree Program](https://www.udacity.com/course/c-plus-plus-nanodegree--nd213). 
+Completed starter code for System Monitor Project in the Object Oriented Programming Course of the [Udacity C++ Nanodegree Program](https://www.udacity.com/course/c-plus-plus-nanodegree--nd213). 
 
-Follow along with the classroom lesson to complete the project!
+The code acts as a poor man's `htop` with similar functionality. **It is more designed to be a demonstration of my skillset than to be of any real use!**
 
 ![System Monitor](images/monitor.png)
+
+# Limitations
+
+Currently, the CPU usage of each process is calculated as the percentage of active jiffies to total jiffies throughout its entire lifetime.
+As a result, this means that the number tends to start very high and drop off with time and become insensitive to input.
+If I get a chance, I would like to improve this so it provides a more real-time value for CPU usage.
 
 ## Udacity Linux Workspace
 [Udacity](https://www.udacity.com/) provides a browser-based Linux [Workspace](https://engineering.udacity.com/creating-a-gpu-enhanced-virtual-desktop-for-udacity-497bdd91a505) for students. 
@@ -25,7 +31,7 @@ This project uses [Make](https://www.gnu.org/software/make/). The Makefile has f
 * `debug` compiles the source code and generates an executable, including debugging symbols
 * `clean` deletes the `build/` directory, including all of the build artifacts
 
-## Instructions
+## Instructions (If you want a go at the project yourself!)
 
 1. Clone the project repository: `git clone https://github.com/udacity/CppND-System-Monitor-Project-Updated.git`
 
