@@ -8,7 +8,7 @@
 
 #include "linux_parser.h"
 #include <iomanip>
-#include <filesystem>
+#include <experimental/filesystem>
 
 using std::string;
 using std::to_string;
@@ -65,21 +65,20 @@ vector<int> LinuxParser::Pids() {
     }
   }
   closedir(directory);*/
-
-  using std::filesystem;
   string directory_path, filename;
   int pid;
-  const path proc_dir{kProcDirectory};
-  for (directory_entry const& dir_entry : directory_iterator{proc_dir}) {
+  
+  const std::experimental::filesystem::path proc_dir{kProcDirectory};
+  for (auto const& dir_entry : std::experimental::filesytem::directory_iterator{proc_dir}) {
     if (dir_entry.is_directory()) {
-      // Get the directory path and reverse it
+      // Get the directory path as a string and reverse it
       directory_path = dir_entry.path().string();
       std::reverse(directory_path.begin(), directory_path.end());
       // Get the name of the current folder and check if it is an int (i.e. one of our pids)
       std::istringstream directory_path_stream{directory_path};
-      std::getline(directory_path_stream, filename, '/')
+      std::getline(directory_path_stream, filename, '/');
       if (std::all_of(filename.begin(), filename.end(), isdigit)) {
-        pid = stoi{filename};
+        pid = std::stoi(filename);
         pids.push_back(pid);
       }
     }
