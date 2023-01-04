@@ -9,9 +9,6 @@
 #include "system.h"
 #include "linux_parser.h"
 
-using std::set;
-using std::size_t;
-using std::string;
 using std::vector;
 
 // Return the system's CPU
@@ -24,6 +21,7 @@ vector<Process>& System::Processes() {
     for (int pid : pids) {
         processes_.emplace_back(Process(pid));
     }
+    // Sort using "<" operator based off code in process.cpp
     std::sort(processes_.rbegin(), processes_.rend());
     return processes_;
 }

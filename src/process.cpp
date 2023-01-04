@@ -14,23 +14,20 @@ using std::vector;
 
 Process::Process(const int pid) {
     pid_ = pid;
-    uptime_ = LinuxParser::UpTime(pid); //starttime / hz
-    active_jiffies_ = LinuxParser::ActiveJiffies(pid_); //total_time / hz
-    system_uptime_ = LinuxParser::UpTime(); //uptime
 
-    /*seconds = uptime - starttime / hz
+    // To get the utilisation: https://stackoverflow.com/questions/16726779/how-do-i-get-the-total-cpu-usage-of-an-application-from-proc-pid-stat/16736599#16736599
+    uptime_ = LinuxParser::UpTime(pid); // starttime / hz
+    active_jiffies_ = LinuxParser::ActiveJiffies(pid_); // total_time / hz
+    system_uptime_ = LinuxParser::UpTime(); // uptime
 
-    cpu = (total_time / hz) / seconds
-*/ 
     try {
         cpu_ = float(active_jiffies_) / float(system_uptime_ - uptime_);
-    } catch (...) { // Divide by 0 or something
+    } catch (...) { // Divide by 0
         cpu_ = 0.0;;
     }
     command_ = LinuxParser::Command(pid);
     ram_ = LinuxParser::Ram(pid_);
     user_ = LinuxParser::User(pid_);
-    
 }
 
 // Return this process's ID
@@ -54,4 +51,7 @@ long int Process::UpTime() const { return LinuxParser::UpTime() - LinuxParser::U
 // Overload the "less than" comparison operator for Process objects
 bool Process::operator<(Process const& a) const { 
     return CpuUtilization() < a.CpuUtilization();
+
+    // Alternative method if one wanted
+    // return std::stoi(Ram()) < std::stoi(a.Ram());
 }

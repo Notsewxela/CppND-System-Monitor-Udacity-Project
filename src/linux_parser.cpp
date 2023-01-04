@@ -50,7 +50,7 @@ string LinuxParser::Kernel() {
 
 // BONUS: Update this to use std::filesystem
 vector<int> LinuxParser::Pids() {
-  vector<int> pids;/*
+  vector<int> pids;
   DIR* directory = opendir(kProcDirectory.c_str());
   struct dirent* file;
   while ((file = readdir(directory)) != nullptr) {
@@ -64,12 +64,20 @@ vector<int> LinuxParser::Pids() {
       }
     }
   }
-  closedir(directory);*/
+  closedir(directory);
+
+  
+
+  // This is my attempt at the bonus task. Unfortunately, I canot get it to compile
+  // on the udacity virtual machines (due to some missing libraries I think) but I leave
+  // it here as evidence of my attempt
+  /*
   string directory_path, filename;
   int pid;
   
-  const std::experimental::filesystem::path proc_dir{kProcDirectory};
-  for (auto const& dir_entry : std::experimental::filesytem::directory_iterator{proc_dir}) {
+  using namespace std::experimental; // for filesystem namespace
+  const filesystem::path proc_dir{kProcDirectory};
+  for (auto const& dir_entry : filesystem::directory_iterator{proc_dir}) {
     if (dir_entry.is_directory()) {
       // Get the directory path as a string and reverse it
       directory_path = dir_entry.path().string();
@@ -83,7 +91,7 @@ vector<int> LinuxParser::Pids() {
       }
     }
   }
-
+  */
   return pids;
 }
 
@@ -96,7 +104,7 @@ float LinuxParser::MemoryUtilization() {
 
   long mem_total, mem_free;
 
-  // Allows breaking out of the loop early
+  // Allows breaking out of the loop early in case of a long file
   bool mem_total_found{false}, mem_free_found{false};
   
   std::ifstream filestream(kProcDirectory + kMeminfoFilename);
@@ -122,10 +130,10 @@ float LinuxParser::MemoryUtilization() {
   /* Called in case it didn't find any info, either because the file does not exist or something missing in file
      Alternative here is just to throw an error, but that has benefits and drawbacks compared with what I have done.
      What I have here is a program that won't crash but will produce erroneous results instead
-     If it was st to crash, it fails whole program gets stuck and crashes, but easier to identify erroneous results
-     Unsure which is better in this context.... */
+     Negative values are clearly wrong for all below contexts and point to where the code may be going wrong instead of crashing uninformatively
+     in that special way C++ likes to sometimes. I have repeated this logic below where appropriate */
   } else {
-    return 0;
+    return -1;
   }
 }
 
@@ -138,8 +146,9 @@ long LinuxParser::UpTime() {
     std::getline(filestream, line);
     std::istringstream linestream{line};
     linestream >> uptime;
+    return uptime;
   }
-  return uptime;
+  return -1;
 }
 
 // Read and return the number of jiffies for the system since the last boot
@@ -164,8 +173,8 @@ long LinuxParser::ActiveJiffies(int pid) {
     linestream >> utime >> stime >> cutime >> cstime;
     return (utime + stime + cutime + cstime) / sysconf(_SC_CLK_TCK);
   }
-  // Return 0 if it all goes wrong :(
-  return 0;
+  // Return -1 if it all goes wrong :(
+  return -1;
 }
 
 // Read and return the number of active jiffies for the system
@@ -173,9 +182,9 @@ long LinuxParser::ActiveJiffies() {
   vector<string> jiffies = CpuUtilization();
   using std::stol;
   return stol(jiffies[CPUStates::kUser_]) + stol(jiffies[CPUStates::kGuest_]) +
-  stol(jiffies[CPUStates::kGuestNice_]) + stol(jiffies[CPUStates::kIRQ_]) + 
-  stol(jiffies[CPUStates::kNice_]) + stol(jiffies[CPUStates::kSoftIRQ_]) +
-  stol(jiffies[CPUStates::kSteal_]) + stol(jiffies[CPUStates::kSystem_]);
+    stol(jiffies[CPUStates::kGuestNice_]) + stol(jiffies[CPUStates::kIRQ_]) + 
+    stol(jiffies[CPUStates::kNice_]) + stol(jiffies[CPUStates::kSoftIRQ_]) +
+    stol(jiffies[CPUStates::kSteal_]) + stol(jiffies[CPUStates::kSystem_]);
 }
 
 // Read and return the number of idle jiffies for the system
@@ -183,7 +192,6 @@ long LinuxParser::IdleJiffies() {
   vector<string> jiffies = CpuUtilization();
   using std::stol;
   return stol(jiffies[CPUStates::kIdle_]) + stol(jiffies[CPUStates::kIOwait_]);
-
 }
 
 // Read and return CPU utilization
@@ -194,12 +202,13 @@ vector<string> LinuxParser::CpuUtilization() {
 
   if (filestream.is_open()) {
     string line, cpu, jiffy;
-    // Doing the loop allows for accomodation to changes of the structure of /proc/stat
     
     while (std::getline(filestream, line) and !found) {
       std::istringstream linestream{line};
       linestream >> cpu;
       if (cpu == "cpu") {
+        // Note that this code in particular will break if the file strucure of /proc/stat changes
+        // Unsure how to guard for this without having to manually change code based on changes
         while (linestream >> jiffy) {
           jiffies.emplace_back(jiffy);
         }
@@ -210,7 +219,7 @@ vector<string> LinuxParser::CpuUtilization() {
   if (found) {
     return jiffies;
   } else { // Something went wrong :(
-    return std::vector<string> {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    return std::vector<string> {"-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1"};
   }
 }
 
@@ -224,7 +233,8 @@ int LinuxParser::RunningProcesses() {
   return Processes("procs_running");
 }
 
-// A function I added to deal with repeated code in the two above process functions
+// A function I added to deal with repeated code in the two above given process functions as accessing same file
+// Read and return the first value of /proc/stat file with the given key
 int LinuxParser::Processes(string key) {
   int processes;
   bool found{false};
@@ -244,7 +254,7 @@ int LinuxParser::Processes(string key) {
   if (found) {
     return processes;
   } else {
-    return 0;
+    return -1;
   }
 }
 
@@ -260,7 +270,7 @@ string LinuxParser::Command(int pid) {
     std::replace(line.begin(), line.end(), '\000', ' ');
     return line;
   }
-  // Something went wrong :(
+  // Something went wrong :(. OK to use string message here as expecting non-numeric string
   return "Problem accessing " + kProcDirectory + std::to_string(pid) + kCmdlineFilename;
 }
 
@@ -281,7 +291,7 @@ string LinuxParser::Ram(int pid) {
       }
     }
   }
-  return "Problem accessing " + kProcDirectory + std::to_string(pid) + kStatusFilename;
+  return "-1";
 }
 
 // Read and return the user ID associated with a process
@@ -340,5 +350,5 @@ long LinuxParser::UpTime(int pid) {
     linestream >> uptime;
     return uptime / sysconf(_SC_CLK_TCK);
   }
-  return 0;
+  return -1;
 }
